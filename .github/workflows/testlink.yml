@@ -1,0 +1,32 @@
+name: Sync GitHub Issues to TestLink
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install axios xmlbuilder2 uuid
+
+      - name: Run sync script
+        run: node sync.js
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_ID: ${{ github.event.issue.number }}
+          TESTLINK_DEVKEY: ${{ secrets.TESTLINK_API_KEY }}
+          TESTLINK_PROJECT_ID: ${{ secrets.TESTLINK_PROJECT_ID }}
+          TESTLINK_REQSPEC_ID: ${{ secrets.TESTLINK_REQSPEC_ID }}
+
+          
