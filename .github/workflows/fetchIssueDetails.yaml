@@ -1,0 +1,23 @@
+name: Fetch Issue Details
+
+# Trigger the workflow on issue creation
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  fetch_issue_details:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repo (optional, but good practice)
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Get issue details using GitHub context
+      - name: Get Issue Details
+        run: |
+          echo "Issue Number: ${{ github.event.issue.number }}"
+          echo "Issue Title: ${{ github.event.issue.title }}"
+          echo "Issue Body: ${{ github.event.issue.body }}"
+          echo "Issue Author: ${{ github.event.issue.user.login }}"
