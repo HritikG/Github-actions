@@ -15,16 +15,9 @@ on:
       issue_author:
         required: true
         type: string
-      folder_id:   # 👈 NEW
+      folder_id:   # 👈 new input for folder
         required: true
         type: string
-    secrets:
-      TESTLINK_URL:
-        required: true
-      TESTLINK_USER:
-        required: true
-      TESTLINK_PASS:
-        required: true
 
 jobs:
   generate-xml:
@@ -104,4 +97,4 @@ jobs:
           TESTLINK_URL: ${{ secrets.TESTLINK_URL }}
           TESTLINK_USER: ${{ secrets.TESTLINK_USER }}
           TESTLINK_PASS: ${{ secrets.TESTLINK_PASS }}
-          FOLDER_ID: ${{ inputs.folder_id }}   # 👈 NEW
+          FOLDER_ID: ${{ inputs.folder_id }}   # 👈 pass folder id here

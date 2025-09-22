@@ -35,7 +35,7 @@ const path = require("path");
         const filePath = path.resolve(dir, file);
         console.log(`📂 Uploading ${file} to folder ${folderId}...`);
 
-        await page.goto(`${testlinkUrl}/lib/requirements/reqImport.php?req_spec_id=${folderId}`);
+        await page.goto(`${testlinkUrl}/lib/requirements/reqImport.php?req_spec_id=${process.env.FOLDER_ID}`);
         await page.waitForSelector("input[name='uploadFile']");
         await page.selectOption("select[name='importType']", "XML");
         await page.setInputFiles("input[type='file']", filePath);
