@@ -1,23 +1,107 @@
-name: Fetch Issue Details
+name: GitHub Issues to TestLink
 
-# Trigger the workflow on issue creation
 on:
-  issues:
-    types: [opened]
+  workflow_call:
+    inputs:
+      issue_number:
+        required: true
+        type: string
+      issue_title:
+        required: true
+        type: string
+      issue_body:
+        required: true
+        type: string
+      issue_author:
+        required: true
+        type: string
+      folder_id:   # 👈 NEW
+        required: true
+        type: string
+    secrets:
+      TESTLINK_URL:
+        required: true
+      TESTLINK_USER:
+        required: true
+      TESTLINK_PASS:
+        required: true
 
 jobs:
-  fetch_issue_details:
+  generate-xml:
     runs-on: ubuntu-latest
-
     steps:
-      # Step 1: Checkout the repo (optional, but good practice)
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      # Step 2: Get issue details using GitHub context
-      - name: Get Issue Details
-        run: |
-          echo "Issue Number: ${{ github.event.issue.number }}"
-          echo "Issue Title: ${{ github.event.issue.title }}"
-          echo "Issue Body: ${{ github.event.issue.body }}"
-          echo "Issue Author: ${{ github.event.issue.user.login }}"
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm install playwright @actions/core @actions/github
+
+      - name: Create requirements directory
+        run: mkdir -p requirements
+
+      - name: Generate Requirement XML with Retry
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: node .github/scripts/generate-xml.js
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ISSUE_TITLE: ${{ inputs.issue_title }}
+          ISSUE_BODY: ${{ inputs.issue_body }}
+          ISSUE_AUTHOR: ${{ inputs.issue_author }}
+          REPO_URL: ${{ github.repositoryUrl }}
+
+      - name: Upload Artifact (XML File)
+        uses: actions/upload-artifact@v4
+        with:
+          name: requirement-xml
+          path: requirements/requirement-${{ inputs.issue_number }}.xml
+
+  upload-to-testlink:
+    runs-on: ubuntu-latest
+    needs: generate-xml
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: requirement-xml
+          path: requirements/
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm install playwright
+
+      - name: Run Playwright Script (Upload to TestLink) with Retry
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_wait_seconds: 60
+          command: |
+            echo "=== Debug Info ==="
+            echo "XML files available:"
+            ls -la requirements/
+            echo "XML content:"
+            cat requirements/requirement-*.xml
+            
+            echo "=== Running Upload Script ==="
+            node .github/scripts/upload-to-testlink.js
+        env:
+          TESTLINK_URL: ${{ secrets.TESTLINK_URL }}
+          TESTLINK_USER: ${{ secrets.TESTLINK_USER }}
+          TESTLINK_PASS: ${{ secrets.TESTLINK_PASS }}
+          FOLDER_ID: ${{ inputs.folder_id }}   # 👈 NEW
